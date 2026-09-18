@@ -1,9 +1,7 @@
 import { useMemo, useState } from "react";
 import { CHAPTERS, FORMULAS, QUESTIONS } from "./data";
 
-type Screen = "map" | "skills" | "formulas";
-
-type Progress = Record<string, number>;
+type Screen = "map" | "skills" | "formulas" | "study";
 
 const chapterColors: Record<number, string> = {
   1: "#FFC907",
@@ -14,9 +12,9 @@ const chapterColors: Record<number, string> = {
 function App() {
   const [screen, setScreen] = useState<Screen>("map");
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
-  const [showWorld, setShowWorld] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
-  const [progress, setProgress] = useState<Progress>(() => {
+  const [progress, setProgress] = useState<Record<string, number>>(() => {
     try {
       const saved = localStorage.getItem("finance-world-progress");
       return saved ? JSON.parse(saved) : {};
@@ -25,40 +23,7 @@ function App() {
     }
   });
 
-  const totalQuestions = QUESTIONS.length;
-  const completedQuestions = Object.values(progress).reduce(
-    (sum, value) => sum + value,
-    0
-  );
-
-  const overallProgress =
-    totalQuestions === 0
-      ? 0
-      : Math.min(100, Math.round((completedQuestions / totalQuestions) * 100));
-
-  const chapterQuestionCounts = useMemo(() => {
-    const counts: Record<number, number> = {};
-
-    CHAPTERS.forEach((chapter) => {
-      counts[chapter.id] = QUESTIONS.filter(
-        (question) => question.chapter === chapter.id
-      ).length;
-    });
-
-    return counts;
-  }, []);
-
-  function openChapter(chapterId: number) {
-    setSelectedChapter(chapterId);
-    setShowWorld(true);
-  }
-
-  function closeWorld() {
-    setShowWorld(false);
-    setSelectedChapter(null);
-  }
-
-  function updateProgress(questionId: string) {
+  function recordPractice(questionId: string) {
     const updated = {
       ...progress,
       [questionId]: (progress[questionId] || 0) + 1,
@@ -71,52 +36,37 @@ function App() {
     );
   }
 
-  if (screen === "skills") {
-    return (
-      <SkillsScreen
-        onBack={() => setScreen("map")}
-        chapters={CHAPTERS}
-        progress={progress}
-      />
-    );
+  function startSection(chapterId: number, section: string) {
+    setSelectedChapter(chapterId);
+    setSelectedSection(section);
+    setScreen("study");
   }
 
-  if (screen === "formulas") {
-    return (
-      <FormulaScreen
-        onBack={() => setScreen("map")}
-        formulas={FORMULAS}
-      />
-    );
-  }
+  const practicedCount = Object.keys(progress).length;
 
   return (
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">$</div>
+
           <div>
             <div className="brand-name">FINANCE WORLD</div>
-            <div className="brand-subtitle">Corporate Finance Quest</div>
+            <div className="brand-subtitle">
+              Corporate Finance Exam Prep
+            </div>
           </div>
         </div>
 
         <div className="player-stats">
           <div className="stat">
-            <span className="stat-label">LEVEL</span>
-            <strong>{Math.max(1, Math.floor(completedQuestions / 5) + 1)}</strong>
+            <span className="stat-label">PRACTICED</span>
+            <strong>{practicedCount}</strong>
           </div>
 
           <div className="stat">
             <span className="stat-label">QUESTIONS</span>
-            <strong>
-              {completedQuestions}/{totalQuestions}
-            </strong>
-          </div>
-
-          <div className="stat">
-            <span className="stat-label">PROGRESS</span>
-            <strong>{overallProgress}%</strong>
+            <strong>{QUESTIONS.length}</strong>
           </div>
         </div>
       </header>
@@ -130,641 +80,795 @@ function App() {
         </button>
 
         <button
-          className="nav-button"
+          className={screen === "skills" ? "nav-button active" : "nav-button"}
           onClick={() => setScreen("skills")}
         >
           📈 My Skills
         </button>
 
         <button
-          className="nav-button"
+          className={
+            screen === "formulas" ? "nav-button active" : "nav-button"
+          }
           onClick={() => setScreen("formulas")}
         >
           📘 Formula Book
         </button>
       </nav>
 
-      <main className="main-content">
-        <section className="hero-section">
-          <div className="hero-badge">EXAM PREP • CHAPTERS 1–3</div>
+      {screen === "map" && (
+        <StudyMap
+          onStartSection={startSection}
+          onStudyRun={() => setScreen("study")}
+        />
+      )}
 
-          <h1>Build Your Finance World</h1>
+      {screen === "skills" && (
+        <SkillsScreen
+          progress={progress}
+          onStartSection={startSection}
+        />
+      )}
+
+      {screen === "formulas" && (
+        <FormulaScreen />
+      )}
+
+      {screen === "study" && (
+        <StudyRun
+          chapter={selectedChapter}
+          section={selectedSection}
+          onBack={() => {
+            setScreen("map");
+            setSelectedChapter(null);
+            setSelectedSection(null);
+          }}
+          onStartSection={startSection}
+          onPractice={recordPractice}
+        />
+      )}
+
+      <footer>
+        <span>Finance World</span>
+        <span>Fundamentals of Corporate Finance • Chapters 1–3</span>
+      </footer>
+    </div>
+  );
+}
+
+/* =========================
+   STUDY MAP
+========================= */
+
+function StudyMap({
+  onStartSection,
+  onStudyRun,
+}: {
+  onStartSection: (chapter: number, section: string) => void;
+  onStudyRun: () => void;
+}) {
+  return (
+    <main className="main-content">
+      <section className="hero-section">
+        <div className="hero-badge">
+          EXAM PREP • CHAPTERS 1–3
+        </div>
+
+        <h1>Finance World</h1>
+
+        <p>
+          Choose a chapter, choose a section, and start practicing.
+          Every question is based on your Chapter 1–3 course material.
+        </p>
+
+        <button
+          className="next-button"
+          onClick={onStudyRun}
+        >
+          ⚡ Quick Study Run
+        </button>
+      </section>
+
+      <section className="section-heading">
+        <div>
+          <div className="eyebrow">STUDY MAP</div>
+          <h2>Choose Your World</h2>
+        </div>
+      </section>
+
+      <div className="world-grid">
+        {CHAPTERS.map((chapter) => (
+          <article
+            className="world-card"
+            key={chapter.id}
+            style={{
+              borderTopColor: chapterColors[chapter.id],
+            }}
+          >
+            <div
+              className="world-number"
+              style={{
+                backgroundColor: chapterColors[chapter.id],
+              }}
+            >
+              {chapter.id}
+            </div>
+
+            <div className="world-status">
+              WORLD {chapter.id}
+            </div>
+
+            <h3>{chapter.title}</h3>
+
+            <p>{chapter.description}</p>
+
+            <div className="world-meta">
+              <span>{chapter.sections.length} sections</span>
+
+              <span>
+                {
+                  QUESTIONS.filter(
+                    (q) => q.chapter === chapter.id
+                  ).length
+                } questions
+              </span>
+            </div>
+
+            <div className="section-list">
+              {chapter.sections.map((section, index) => (
+                <button
+                  key={section}
+                  className="section-node"
+                  onClick={() =>
+                    onStartSection(chapter.id, section)
+                  }
+                >
+                  <span className="node-number">
+                    {index + 1}
+                  </span>
+
+                  <span className="node-info">
+                    <strong>{section}</strong>
+                    <small>Start practice →</small>
+                  </span>
+
+                  <span className="node-arrow">→</span>
+                </button>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+/* =========================
+   STUDY RUN
+========================= */
+
+function StudyRun({
+  chapter,
+  section,
+  onBack,
+  onStartSection,
+  onPractice,
+}: {
+  chapter: number | null;
+  section: string | null;
+  onBack: () => void;
+  onStartSection: (chapter: number, section: string) => void;
+  onPractice: (questionId: string) => void;
+}) {
+  const [selectedChapter, setSelectedChapter] =
+    useState<number | null>(chapter);
+
+  const [selectedSection, setSelectedSection] =
+    useState<string | null>(section);
+
+  const [runStarted, setRunStarted] = useState(
+    chapter !== null && section !== null
+  );
+
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] =
+    useState<number | null>(null);
+  const [answered, setAnswered] = useState(false);
+  const [score, setScore] = useState(0);
+
+  const availableSections =
+    selectedChapter !== null
+      ? CHAPTERS.find(
+          (c) => c.id === selectedChapter
+        )?.sections || []
+      : [];
+
+  const questions = useMemo(() => {
+    if (selectedChapter === null) return [];
+
+    return QUESTIONS.filter(
+      (q) =>
+        q.chapter === selectedChapter &&
+        (selectedSection === null ||
+          q.section === selectedSection)
+    );
+  }, [selectedChapter, selectedSection]);
+
+  if (!runStarted) {
+    return (
+      <main className="main-content">
+        <section className="hero-section compact">
+          <div className="hero-badge">
+            CUSTOM STUDY RUN
+          </div>
+
+          <h1>Choose What to Study</h1>
 
           <p>
-            Master corporate finance one section at a time.
-            Learn concepts, train formulas, solve calculations,
-            and raise your skill levels before exam day.
+            Select a chapter and section. Then you'll
+            immediately begin answering questions.
           </p>
-
-          <div className="hero-progress">
-            <div className="hero-progress-header">
-              <span>Overall Course Progress</span>
-              <strong>{overallProgress}%</strong>
-            </div>
-
-            <div className="progress-track">
-              <div
-                className="progress-fill"
-                style={{ width: `${overallProgress}%` }}
-              />
-            </div>
-          </div>
         </section>
 
         <section className="section-heading">
           <div>
-            <div className="eyebrow">THE WORLDS</div>
-            <h2>Choose Your Chapter</h2>
+            <div className="eyebrow">STEP 1</div>
+            <h2>Choose a Chapter</h2>
           </div>
-
-          <span className="question-count">
-            {totalQuestions} practice questions loaded
-          </span>
         </section>
 
-        <section className="world-grid">
-          {CHAPTERS.map((chapter, index) => {
-            const isLocked = index > 0;
-            const questionCount = chapterQuestionCounts[chapter.id] || 0;
-
-            return (
-              <article
-                key={chapter.id}
-                className={`world-card ${isLocked ? "locked" : ""}`}
+        <div className="world-grid">
+          {CHAPTERS.map((c) => (
+            <button
+              key={c.id}
+              className={`world-card ${
+                selectedChapter === c.id ? "selected" : ""
+              }`}
+              style={{
+                borderTopColor: chapterColors[c.id],
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                setSelectedChapter(c.id);
+                setSelectedSection(null);
+              }}
+            >
+              <div
+                className="world-number"
                 style={{
-                  borderTopColor: chapterColors[chapter.id],
+                  backgroundColor: chapterColors[c.id],
                 }}
               >
-                <div
-                  className="world-number"
-                  style={{
-                    backgroundColor: chapterColors[chapter.id],
-                  }}
-                >
-                  {chapter.id}
-                </div>
-
-                <div className="world-status">
-                  {isLocked ? "🔒 LOCKED" : "✓ AVAILABLE"}
-                </div>
-
-                <h3>{chapter.title}</h3>
-
-                <p>{chapter.description}</p>
-
-                <div className="world-meta">
-                  <span>{questionCount} questions</span>
-                  <span>{chapter.sections.length} sections</span>
-                </div>
-
-                <button
-                  className="world-button"
-                  disabled={isLocked}
-                  onClick={() => openChapter(chapter.id)}
-                >
-                  {isLocked ? "Complete Previous World" : "Enter World →"}
-                </button>
-              </article>
-            );
-          })}
-        </section>
-
-        <section className="quick-actions">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">TRAINING</div>
-              <h2>Choose Your Training</h2>
-            </div>
-          </div>
-
-          <div className="action-grid">
-            <button
-              className="action-card"
-              onClick={() => setScreen("skills")}
-            >
-              <span className="action-icon">🎯</span>
-              <div>
-                <strong>Raise My Skills</strong>
-                <p>Focus on the concepts you understand least.</p>
+                {c.id}
               </div>
-            </button>
 
-            <button
-              className="action-card"
-              onClick={() => setScreen("formulas")}
-            >
-              <span className="action-icon">🧮</span>
-              <div>
-                <strong>Formula Training</strong>
-                <p>Review the formulas you need for the exam.</p>
+              <div className="world-status">
+                CHAPTER {c.id}
               </div>
+
+              <h3>{c.title}</h3>
+
+              <p>{c.description}</p>
             </button>
-
-            <button
-              className="action-card"
-              onClick={() => openChapter(1)}
-            >
-              <span className="action-icon">⚔️</span>
-              <div>
-                <strong>Study Run</strong>
-                <p>Enter a chapter and practice its questions.</p>
-              </div>
-            </button>
-          </div>
-        </section>
-      </main>
-
-      <footer>
-        <span>Finance World</span>
-        <span>Corporate Finance • Exam Prep</span>
-      </footer>
-
-      {showWorld && selectedChapter !== null && (
-        <WorldModal
-          chapterId={selectedChapter}
-          onClose={closeWorld}
-          progress={progress}
-          onAnswer={updateProgress}
-        />
-      )}
-    </div>
-  );
-}
-
-function WorldModal({
-  chapterId,
-  onClose,
-  progress,
-  onAnswer,
-}: {
-  chapterId: number;
-  onClose: () => void;
-  progress: Progress;
-  onAnswer: (questionId: string) => void;
-}) {
-  const chapter = CHAPTERS.find((item) => item.id === chapterId);
-
-  const questions = QUESTIONS.filter(
-    (question) => question.chapter === chapterId
-  );
-
-  const [selectedSection, setSelectedSection] = useState<string | null>(null);
-
-  const sectionQuestions = selectedSection
-    ? questions.filter((question) => question.section === selectedSection)
-    : [];
-
-  if (!chapter) return null;
-
-  return (
-    <div className="modal-backdrop">
-      <div className="world-modal">
-        <button className="close-button" onClick={onClose}>
-          ×
-        </button>
-
-        <div className="modal-header">
-          <div
-            className="modal-world-number"
-            style={{ backgroundColor: chapterColors[chapterId] }}
-          >
-            {chapterId}
-          </div>
-
-          <div>
-            <div className="eyebrow">WORLD {chapterId}</div>
-            <h2>{chapter.title}</h2>
-            <p>{chapter.description}</p>
-          </div>
+          ))}
         </div>
 
-        {!selectedSection ? (
+        {selectedChapter !== null && (
           <>
-            <h3 className="modal-section-title">
-              Choose a Section
-            </h3>
+            <section className="section-heading">
+              <div>
+                <div className="eyebrow">STEP 2</div>
+                <h2>Choose a Section</h2>
+              </div>
+            </section>
 
             <div className="section-list">
-              {chapter.sections.map((section, index) => {
-                const sectionQs = questions.filter(
-                  (question) => question.section === section
-                );
+              <button
+                className="section-node"
+                onClick={() => {
+                  setSelectedSection(null);
+                  setRunStarted(true);
+                }}
+              >
+                <span className="node-number">★</span>
 
-                const completed = sectionQs.filter(
-                  (question) => progress[question.id]
-                ).length;
+                <span className="node-info">
+                  <strong>All Sections</strong>
+                  <small>
+                    Practice everything in this chapter
+                  </small>
+                </span>
 
-                return (
+                <span className="node-arrow">→</span>
+              </button>
+
+              {availableSections.map(
+                (sectionName, index) => (
                   <button
-                    key={section}
+                    key={sectionName}
                     className="section-node"
-                    onClick={() => setSelectedSection(section)}
+                    onClick={() => {
+                      setSelectedSection(sectionName);
+                      setRunStarted(true);
+                    }}
                   >
-                    <span className="node-number">{index + 1}</span>
+                    <span className="node-number">
+                      {index + 1}
+                    </span>
 
                     <span className="node-info">
-                      <strong>{section}</strong>
+                      <strong>{sectionName}</strong>
                       <small>
-                        {completed}/{sectionQs.length} practiced
+                        Practice this section
                       </small>
                     </span>
 
-                    <span className="node-arrow">→</span>
+                    <span className="node-arrow">
+                      →
+                    </span>
                   </button>
-                );
-              })}
+                )
+              )}
             </div>
           </>
-        ) : (
-          <QuestionList
-            chapter={chapterId}
-            section={selectedSection}
-            questions={sectionQuestions}
-            onBack={() => setSelectedSection(null)}
-            onAnswer={onAnswer}
-            progress={progress}
-          />
         )}
-      </div>
-    </div>
-  );
-}
 
-function QuestionList({
-  chapter,
-  section,
-  questions,
-  onBack,
-  onAnswer,
-  progress,
-}: {
-  chapter: number;
-  section: string;
-  questions: typeof QUESTIONS;
-  onBack: () => void;
-  onAnswer: (questionId: string) => void;
-  progress: Progress;
-}) {
-  const [current, setCurrent] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [answered, setAnswered] = useState(false);
-
-  if (questions.length === 0) {
-    return (
-      <div>
-        <button className="back-button" onClick={onBack}>
-          ← Back to sections
+        <button
+          className="back-button"
+          onClick={onBack}
+        >
+          ← Back to Study Map
         </button>
-
-        <h3>No questions found for this section.</h3>
-      </div>
+      </main>
     );
   }
 
-  const question = questions[current];
-  const correct = selected === question.answer;
+  if (questions.length === 0) {
+    return (
+      <main className="main-content">
+        <section className="hero-section compact">
+          <h1>No questions found</h1>
+          <p>
+            This section does not currently have questions
+            in the study database.
+          </p>
+
+          <button
+            className="next-button"
+            onClick={() => {
+              setRunStarted(false);
+              setSelectedSection(null);
+            }}
+          >
+            Choose Another Section
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  const question = questions[currentQuestion];
 
   function chooseAnswer(index: number) {
     if (answered) return;
 
-    setSelected(index);
+    setSelectedAnswer(index);
     setAnswered(true);
 
     if (index === question.answer) {
-      onAnswer(question.id);
+      setScore((previous) => previous + 1);
+      onPractice(question.id);
     }
   }
 
   function nextQuestion() {
-    setSelected(null);
-    setAnswered(false);
-
-    if (current < questions.length - 1) {
-      setCurrent(current + 1);
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(
+        (previous) => previous + 1
+      );
+      setSelectedAnswer(null);
+      setAnswered(false);
     }
   }
 
-  return (
-    <div className="question-area">
-      <button className="back-button" onClick={onBack}>
-        ← Back to sections
-      </button>
+  const isCorrect =
+    selectedAnswer === question.answer;
 
-      <div className="question-topline">
-        <span>
-          Chapter {chapter} • {section}
-        </span>
+  const finished =
+    currentQuestion === questions.length - 1 &&
+    answered;
 
-        <span>
-          {current + 1}/{questions.length}
-        </span>
-      </div>
+  if (finished) {
+    const percentage = Math.round(
+      (score / questions.length) * 100
+    );
 
-      <div className="question-progress">
-        <div
-          className="question-progress-fill"
-          style={{
-            width: `${((current + 1) / questions.length) * 100}%`,
-          }}
-        />
-      </div>
-
-      <div className="question-card">
-        <div className="question-type">
-          {question.type.toUpperCase()}
-        </div>
-
-        <h3>{question.question}</h3>
-
-        <div className="answer-options">
-          {question.options.map((option, index) => {
-            let className = "answer-option";
-
-            if (answered && index === question.answer) {
-              className += " correct";
-            }
-
-            if (answered && index === selected && !correct) {
-              className += " incorrect";
-            }
-
-            return (
-              <button
-                key={index}
-                className={className}
-                onClick={() => chooseAnswer(index)}
-                disabled={answered}
-              >
-                <span className="answer-letter">
-                  {String.fromCharCode(65 + index)}
-                </span>
-
-                <span>{option}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {answered && (
-          <div
-            className={`explanation ${
-              correct ? "explanation-correct" : "explanation-incorrect"
-            }`}
-          >
-            <strong>{correct ? "Correct!" : "Review This One"}</strong>
-
-            <p>{question.explanation}</p>
-
-            {question.formula && (
-              <div className="formula-callout">
-                <span>Formula</span>
-                <code>{question.formula}</code>
-              </div>
-            )}
-
-            {current < questions.length - 1 ? (
-              <button className="next-button" onClick={nextQuestion}>
-                Next Question →
-              </button>
-            ) : (
-              <div className="complete-message">
-                🎉 Section complete! You've reached the end of this run.
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {progress[question.id] ? (
-        <div className="previously-practiced">
-          ✓ You've practiced this concept before.
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function SkillsScreen({
-  onBack,
-  chapters,
-  progress,
-}: {
-  onBack: () => void;
-  chapters: typeof CHAPTERS;
-  progress: Progress;
-}) {
-  return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-mark">$</div>
-          <div>
-            <div className="brand-name">FINANCE WORLD</div>
-            <div className="brand-subtitle">My Skills</div>
-          </div>
-        </div>
-
-        <button className="header-back" onClick={onBack}>
-          ← Study Map
-        </button>
-      </header>
-
+    return (
       <main className="main-content">
-        <section className="hero-section compact">
-          <div className="hero-badge">MASTERY TRACKER</div>
+        <section className="hero-section">
+          <div className="hero-badge">
+            RUN COMPLETE
+          </div>
 
-          <h1>Raise Your Skills</h1>
+          <h1>Study Run Complete!</h1>
+
+          <div className="score-display">
+            <strong>{score}</strong>
+            <span>
+              / {questions.length} correct
+            </span>
+          </div>
 
           <p>
-            Your understanding will eventually be tracked separately
-            for each finance skill.
+            You scored {percentage}%. Keep practicing
+            the questions you missed so the concepts
+            become easier to recall.
           </p>
-        </section>
 
-        <div className="mastery-scale">
-          <div>
-            <strong>0</strong>
-            <span>Not Learned</span>
+          <div className="action-grid">
+            <button
+              className="action-card"
+              onClick={() => {
+                setCurrentQuestion(0);
+                setSelectedAnswer(null);
+                setAnswered(false);
+                setScore(0);
+              }}
+            >
+              🔄 Run Again
+            </button>
+
+            <button
+              className="action-card"
+              onClick={() => {
+                setRunStarted(false);
+                setSelectedSection(null);
+              }}
+            >
+              🗺️ Choose Another Section
+            </button>
+
+            <button
+              className="action-card"
+              onClick={onBack}
+            >
+              ← Study Map
+            </button>
           </div>
-          <div>
-            <strong>1</strong>
-            <span>Familiar</span>
-          </div>
-          <div>
-            <strong>2</strong>
-            <span>Developing</span>
-          </div>
-          <div>
-            <strong>3</strong>
-            <span>Proficient</span>
-          </div>
-          <div>
-            <strong>4</strong>
-            <span>Mastered</span>
-          </div>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="main-content">
+      <section className="question-area">
+        <button
+          className="back-button"
+          onClick={() => {
+            setRunStarted(false);
+            setSelectedSection(null);
+          }}
+        >
+          ← Change Section
+        </button>
+
+        <div className="question-topline">
+          <span>
+            Chapter {selectedChapter}
+            {selectedSection
+              ? ` • ${selectedSection}`
+              : " • All Sections"}
+          </span>
+
+          <span>
+            {currentQuestion + 1}/
+            {questions.length}
+          </span>
         </div>
 
-        {chapters.map((chapter) => {
-          const chapterQuestions = QUESTIONS.filter(
-            (question) => question.chapter === chapter.id
-          );
+        <div className="question-progress">
+          <div
+            className="question-progress-fill"
+            style={{
+              width: `${
+                ((currentQuestion + 1) /
+                  questions.length) *
+                100
+              }%`,
+            }}
+          />
+        </div>
 
-          const practiced = chapterQuestions.filter(
-            (question) => progress[question.id]
-          ).length;
+        <div className="question-card">
+          <div className="question-type">
+            {question.type.toUpperCase()}
+          </div>
 
-          return (
-            <section className="skill-chapter" key={chapter.id}>
-              <div className="skill-chapter-header">
-                <div>
-                  <span className="eyebrow">
-                    WORLD {chapter.id}
-                  </span>
-                  <h2>{chapter.title}</h2>
-                </div>
+          <h3>{question.question}</h3>
 
-                <strong>
-                  {practiced}/{chapterQuestions.length} practiced
-                </strong>
-              </div>
+          <div className="answer-options">
+            {question.options.map(
+              (option, index) => {
+                let className =
+                  "answer-option";
 
-              {chapter.sections.map((section) => {
-                const sectionQs = chapterQuestions.filter(
-                  (question) => question.section === section
-                );
+                if (
+                  answered &&
+                  index === question.answer
+                ) {
+                  className += " correct";
+                }
 
-                const sectionPracticed = sectionQs.filter(
-                  (question) => progress[question.id]
-                ).length;
-
-                const percentage =
-                  sectionQs.length === 0
-                    ? 0
-                    : Math.round(
-                        (sectionPracticed / sectionQs.length) * 100
-                      );
+                if (
+                  answered &&
+                  index === selectedAnswer &&
+                  !isCorrect
+                ) {
+                  className += " incorrect";
+                }
 
                 return (
-                  <div className="skill-row" key={section}>
-                    <div className="skill-info">
-                      <strong>{section}</strong>
-                      <span>
-                        {sectionPracticed}/{sectionQs.length} practiced
-                      </span>
-                    </div>
+                  <button
+                    key={index}
+                    className={className}
+                    disabled={answered}
+                    onClick={() =>
+                      chooseAnswer(index)
+                    }
+                  >
+                    <span className="answer-letter">
+                      {String.fromCharCode(
+                        65 + index
+                      )}
+                    </span>
 
-                    <div className="skill-bar">
-                      <div
-                        className="skill-bar-fill"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-
-                    <button
-                      className="train-button"
-                      onClick={onBack}
-                    >
-                      Train
-                    </button>
-                  </div>
+                    <span>{option}</span>
+                  </button>
                 );
-              })}
-            </section>
-          );
-        })}
-      </main>
+              }
+            )}
+          </div>
 
-      <footer>
-        <span>Finance World</span>
-        <span>Mastery • Practice • Retrieval</span>
-      </footer>
-    </div>
+          {answered && (
+            <div
+              className={`explanation ${
+                isCorrect
+                  ? "explanation-correct"
+                  : "explanation-incorrect"
+              }`}
+            >
+              <strong>
+                {isCorrect
+                  ? "✓ Correct!"
+                  : "Review This One"}
+              </strong>
+
+              <p>{question.explanation}</p>
+
+              {question.formula && (
+                <div className="formula-callout">
+                  <span>Formula</span>
+                  <code>
+                    {question.formula}
+                  </code>
+                </div>
+              )}
+
+              <div className="question-score">
+                Score: {score}/
+                {currentQuestion + 1}
+              </div>
+
+              <button
+                className="next-button"
+                onClick={nextQuestion}
+              >
+                Next Question →
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }
 
-function FormulaScreen({
-  onBack,
-  formulas,
-}: {
-  onBack: () => void;
-  formulas: typeof FORMULAS;
-}) {
-  const chapters = [...new Set(formulas.map((formula) => formula.chapter))];
+/* =========================
+   SKILLS
+========================= */
 
+function SkillsScreen({
+  progress,
+  onStartSection,
+}: {
+  progress: Record<string, number>;
+  onStartSection: (
+    chapter: number,
+    section: string
+  ) => void;
+}) {
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-mark">ƒ</div>
-          <div>
-            <div className="brand-name">FINANCE WORLD</div>
-            <div className="brand-subtitle">Formula Book</div>
-          </div>
+    <main className="main-content">
+      <section className="hero-section compact">
+        <div className="hero-badge">
+          SKILL TRACKER
         </div>
 
-        <button className="header-back" onClick={onBack}>
-          ← Study Map
-        </button>
-      </header>
+        <h1>My Finance Skills</h1>
 
-      <main className="main-content">
-        <section className="hero-section compact">
-          <div className="hero-badge">EXAM FORMULAS</div>
+        <p>
+          Practice each section to build familiarity
+          and strengthen your understanding.
+        </p>
+      </section>
 
-          <h1>Formula Book</h1>
+      {CHAPTERS.map((chapter) => (
+        <section
+          className="skill-chapter"
+          key={chapter.id}
+        >
+          <div className="skill-chapter-header">
+            <div>
+              <div className="eyebrow">
+                CHAPTER {chapter.id}
+              </div>
 
-          <p>
-            Your formulas are organized by chapter so you can
-            review them before calculation questions.
-          </p>
-        </section>
+              <h2>{chapter.title}</h2>
+            </div>
+          </div>
 
-        {chapters.map((chapter) => {
-          const chapterFormulas = formulas.filter(
-            (formula) => formula.chapter === chapter
-          );
+          {chapter.sections.map((section) => {
+            const sectionQuestions =
+              QUESTIONS.filter(
+                (q) =>
+                  q.chapter === chapter.id &&
+                  q.section === section
+              );
 
-          return (
-            <section className="formula-section" key={chapter}>
-              <div className="section-heading">
-                <div>
-                  <div className="eyebrow">CHAPTER {chapter}</div>
-                  <h2>
-                    {CHAPTERS.find((item) => item.id === chapter)?.title}
-                  </h2>
+            const practiced =
+              sectionQuestions.filter(
+                (q) => progress[q.id]
+              ).length;
+
+            const percentage =
+              sectionQuestions.length === 0
+                ? 0
+                : Math.round(
+                    (practiced /
+                      sectionQuestions.length) *
+                      100
+                  );
+
+            return (
+              <div
+                className="skill-row"
+                key={section}
+              >
+                <div className="skill-info">
+                  <strong>{section}</strong>
+
+                  <span>
+                    {practiced}/
+                    {sectionQuestions.length} practiced
+                  </span>
                 </div>
 
-                <span className="question-count">
-                  {chapterFormulas.length} formulas
-                </span>
+                <div className="skill-bar">
+                  <div
+                    className="skill-bar-fill"
+                    style={{
+                      width: `${percentage}%`,
+                    }}
+                  />
+                </div>
+
+                <button
+                  className="train-button"
+                  onClick={() =>
+                    onStartSection(
+                      chapter.id,
+                      section
+                    )
+                  }
+                >
+                  Train
+                </button>
               </div>
+            );
+          })}
+        </section>
+      ))}
+    </main>
+  );
+}
 
-              <div className="formula-grid">
-                {chapterFormulas.map((formula) => (
-                  <article className="formula-card" key={formula.id}>
-                    <div className="formula-card-top">
-                      <span>{formula.name}</span>
-                      <span>CH. {formula.chapter}</span>
-                    </div>
+/* =========================
+   FORMULAS
+========================= */
 
-                    <div className="formula-display">
-                      {formula.formula}
-                    </div>
+function FormulaScreen() {
+  const chapterNumbers = [
+    ...new Set(
+      FORMULAS.map((formula) => formula.chapter)
+    ),
+  ];
 
-                    <p>{formula.description}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
+  return (
+    <main className="main-content">
+      <section className="hero-section compact">
+        <div className="hero-badge">
+          FORMULA REVIEW
+        </div>
+
+        <h1>Formula Book</h1>
+
+        <p>
+          Review the formulas from your Chapter 2
+          and Chapter 3 course material.
+        </p>
+      </section>
+
+      {chapterNumbers.map((chapter) => {
+        const formulas =
+          FORMULAS.filter(
+            (formula) =>
+              formula.chapter === chapter
           );
-        })}
-      </main>
 
-      <footer>
-        <span>Finance World</span>
-        <span>Formula Training</span>
-      </footer>
-    </div>
+        return (
+          <section
+            className="formula-section"
+            key={chapter}
+          >
+            <div className="section-heading">
+              <div>
+                <div className="eyebrow">
+                  CHAPTER {chapter}
+                </div>
+
+                <h2>
+                  {
+                    CHAPTERS.find(
+                      (c) => c.id === chapter
+                    )?.title
+                  }
+                </h2>
+              </div>
+
+              <span className="question-count">
+                {formulas.length} formulas
+              </span>
+            </div>
+
+            <div className="formula-grid">
+              {formulas.map((formula) => (
+                <article
+                  className="formula-card"
+                  key={formula.id}
+                >
+                  <div className="formula-card-top">
+                    <span>{formula.name}</span>
+
+                    <span>
+                      CH. {formula.chapter}
+                    </span>
+                  </div>
+
+                  <div className="formula-display">
+                    {formula.formula}
+                  </div>
+
+                  <p>
+                    {formula.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </main>
   );
 }
 
