@@ -448,8 +448,29 @@ function StudyRun({
     });
   }, [chapterChoice, sectionChoice]);
 
-  const question =
-    runQuestions[questionNumber];
+  const rawQuestion = runQuestions[questionNumber];
+
+  const question = useMemo(() => {
+    if (!rawQuestion) return null;
+
+    const indexed = rawQuestion.options.map((opt, i) => ({
+      opt,
+      originalIndex: i,
+    }));
+
+    for (let i = indexed.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indexed[i], indexed[j]] = [indexed[j], indexed[i]];
+    }
+
+    return {
+      ...rawQuestion,
+      options: indexed.map((item) => item.opt),
+      answer: indexed.findIndex(
+        (item) => item.originalIndex === rawQuestion.answer
+      ),
+    };
+  }, [rawQuestion]);
 
   const beginRun = () => {
     setQuestionNumber(0);
