@@ -3,57 +3,61 @@ import { CHAPTERS, FORMULAS, QUESTIONS } from "./data";
 
 type Screen = "map" | "skills" | "formulas" | "study";
 
-type Progress = Record<string, number>;
-
-const chapterColors: Record<number, string> = {
-  1: "#FFC907",
-  2: "#2E9DF7",
-  3: "#4FCB53",
-};
-
 function App() {
   const [screen, setScreen] = useState<Screen>("map");
-  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
-  const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
-  const [progress, setProgress] = useState<Progress>(() => {
+  const [selectedChapter, setSelectedChapter] = useState<number | null>(
+    null
+  );
+
+  const [selectedSection, setSelectedSection] = useState<string | null>(
+    null
+  );
+
+  const [mastery, setMastery] = useState<Record<string, number>>(() => {
     try {
-      return JSON.parse(localStorage.getItem("finance-world-progress") || "{}");
+      return JSON.parse(
+        localStorage.getItem("finance-world-mastery") || "{}"
+      );
     } catch {
       return {};
     }
   });
 
-  const saveProgress = (next: Progress) => {
-    setProgress(next);
-    localStorage.setItem("finance-world-progress", JSON.stringify(next));
-  };
-
-  const startStudy = (chapter?: number, section?: string) => {
-    setSelectedChapter(chapter ?? null);
-    setSelectedSection(section ?? null);
+  const startStudy = (
+    chapter: number | null = null,
+    section: string | null = null
+  ) => {
+    setSelectedChapter(chapter);
+    setSelectedSection(section);
     setScreen("study");
   };
 
-  const recordSkill = (skill: string, correct: boolean) => {
+  const updateMastery = (skill: string, correct: boolean) => {
     if (!correct) return;
 
-    const current = progress[skill] ?? 0;
-    const next = Math.min(current + 1, 4);
+    setMastery((previous) => {
+      const updated = {
+        ...previous,
+        [skill]: Math.min((previous[skill] || 0) + 1, 4),
+      };
 
-    if (next !== current) {
-      saveProgress({
-        ...progress,
-        [skill]: next,
-      });
-    }
+      localStorage.setItem(
+        "finance-world-mastery",
+        JSON.stringify(updated)
+      );
+
+      return updated;
+    });
   };
 
   return (
     <div className="app-shell">
+      {/* TOP BAR */}
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">$</div>
+
           <div>
             <strong>FINANCE WORLD</strong>
             <span>Corporate Finance Training</span>
@@ -61,76 +65,91 @@ function App() {
         </div>
 
         <div className="player-stats">
-          <div>
+          <div className="stat">
             <small>LEVEL</small>
             <strong>1</strong>
           </div>
 
-          <div>
+          <div className="stat">
             <small>XP</small>
             <strong>
-              {Object.values(progress).reduce((a, b) => a + b, 0) * 25}
+              {Object.values(mastery).reduce(
+                (total, value) => total + value,
+                0
+              ) * 25}
             </strong>
           </div>
         </div>
       </header>
 
+      {/* NAVIGATION */}
       <nav className="main-nav">
         <button
-          className={`nav-button ${screen === "map" ? "active" : ""}`}
+          className={`nav-button ${
+            screen === "map" ? "active" : ""
+          }`}
           onClick={() => setScreen("map")}
         >
           🗺️ Study Map
         </button>
 
         <button
-          className={`nav-button ${screen === "skills" ? "active" : ""}`}
+          className={`nav-button ${
+            screen === "study" ? "active" : ""
+          }`}
+          onClick={() => startStudy()}
+        >
+          ⚔️ Study Run
+        </button>
+
+        <button
+          className={`nav-button ${
+            screen === "skills" ? "active" : ""
+          }`}
           onClick={() => setScreen("skills")}
         >
           🎯 My Skills
         </button>
 
         <button
-          className={`nav-button ${screen === "formulas" ? "active" : ""}`}
+          className={`nav-button ${
+            screen === "formulas" ? "active" : ""
+          }`}
           onClick={() => setScreen("formulas")}
         >
           📖 Formula Book
         </button>
-
-        <button
-          className={`nav-button ${screen === "study" ? "active" : ""}`}
-          onClick={() => startStudy()}
-        >
-          ⚔️ Study Run
-        </button>
       </nav>
 
+      {/* SCREENS */}
       {screen === "map" && (
         <StudyMap
           onStart={startStudy}
-          onOpenChapter={(chapter) => {
+          onEnterChapter={(chapter) => {
             setSelectedChapter(chapter);
+            setSelectedSection(null);
           }}
         />
       )}
-
-      {screen === "skills" && (
-        <SkillsScreen
-          progress={progress}
-          onTrain={(chapter, section) => startStudy(chapter, section)}
-        />
-      )}
-
-      {screen === "formulas" && <FormulaBook />}
 
       {screen === "study" && (
         <StudyRun
           selectedChapter={selectedChapter}
           selectedSection={selectedSection}
+          onStart={startStudy}
           onExit={() => setScreen("map")}
-          onRecordSkill={recordSkill}
+          onCorrect={updateMastery}
         />
       )}
+
+      {screen === "skills" && (
+        <SkillsScreen
+          mastery={mastery}
+          onTrain={startStudy}
+        />
+      )}
+
+      {screen === "formulas" && <FormulaBook />}
     </div>
   );
 }
@@ -141,33 +160,42 @@ function App() {
 
 function StudyMap({
   onStart,
-  onOpenChapter,
+  onEnterChapter,
 }: {
-  onStart: (chapter?: number, section?: string) => void;
-  onOpenChapter: (chapter: number) => void;
+  onStart: (
+    chapter?: number | null,
+    section?: string | null
+  ) => void;
+
+  onEnterChapter: (chapter: number) => void;
 }) {
   const totalQuestions = QUESTIONS.length;
 
   return (
     <main className="main-content">
       <section className="hero-section">
-        <div className="hero-badge">⚡ EXAM TRAINING MODE</div>
+        <div className="hero-badge">
+          ⚡ EXAM TRAINING MODE
+        </div>
 
-        <h1>Build Your Finance Power</h1>
+        <h1>Finance World</h1>
 
         <p>
-          Master Chapters 1–3 through practice, calculation, retrieval, and
-          repeated training.
+          Master corporate finance through practice,
+          calculations, formulas, and repeated retrieval.
         </p>
 
         <div className="hero-progress">
           <div className="progress-label">
             <span>Course Progress</span>
-            <strong>0%</strong>
+            <strong>START HERE</strong>
           </div>
 
           <div className="progress-track">
-            <div className="progress-fill" style={{ width: "0%" }} />
+            <div
+              className="progress-fill"
+              style={{ width: "0%" }}
+            />
           </div>
         </div>
 
@@ -181,78 +209,80 @@ function StudyMap({
 
       <section className="section-heading">
         <div>
-          <span className="eyebrow">YOUR JOURNEY</span>
+          <span className="eyebrow">
+            YOUR JOURNEY
+          </span>
+
           <h2>Finance Worlds</h2>
         </div>
 
-        <span>{totalQuestions} practice questions loaded</span>
+        <span>
+          {totalQuestions} questions loaded
+        </span>
       </section>
 
       <section className="world-grid">
         {CHAPTERS.map((chapter) => {
-          const color = chapterColors[chapter.id] || "#FFC907";
+          const chapterQuestions = QUESTIONS.filter(
+            (question) =>
+              question.chapter === chapter.number
+          );
+
+          const sections = Array.from(
+            new Set(
+              chapterQuestions.map(
+                (question) => question.section
+              )
+            )
+          );
 
           return (
-            <article className="world-card" key={chapter.id}>
+            <article
+              className="world-card"
+              key={chapter.number}
+            >
               <div
                 className="world-number"
-                style={{ borderColor: color }}
+                style={{
+                  borderColor: chapter.color,
+                }}
               >
-                {chapter.id}
+                {chapter.number}
               </div>
 
-              <div className="world-status">WORLD {chapter.id}</div>
+              <div className="world-status">
+                WORLD {chapter.number}
+              </div>
 
               <h3>{chapter.title}</h3>
 
-              <p>{chapter.description}</p>
-
               <div className="world-meta">
-                <span>{chapter.sections.length} sections</span>
+                <span>
+                  {sections.length} sections
+                </span>
 
                 <span>
-                  {
-                    QUESTIONS.filter(
-                      (q) => q.chapter === chapter.id
-                    ).length
-                  }{" "}
-                  questions
+                  {chapterQuestions.length} questions
                 </span>
               </div>
 
               <button
                 className="world-button"
-                onClick={() => onOpenChapter(chapter.id)}
+                onClick={() =>
+                  onEnterChapter(chapter.number)
+                }
               >
                 ENTER WORLD →
               </button>
 
-              {chapter.id === 1 && (
-                <button
-                  className="secondary-button"
-                  onClick={() => onStart(1)}
-                >
-                  Start Chapter 1
-                </button>
-              )}
-
-              {chapter.id === 2 && (
-                <button
-                  className="secondary-button"
-                  onClick={() => onStart(2)}
-                >
-                  Start Chapter 2
-                </button>
-              )}
-
-              {chapter.id === 3 && (
-                <button
-                  className="secondary-button"
-                  onClick={() => onStart(3)}
-                >
-                  Start Chapter 3
-                </button>
-              )}
+              <button
+                className="secondary-button"
+                onClick={() =>
+                  onStart(chapter.number, null)
+                }
+              >
+                START CHAPTER
+              </button>
             </article>
           );
         })}
@@ -261,7 +291,10 @@ function StudyMap({
       <section className="quick-actions">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">TRAINING CENTER</span>
+            <span className="eyebrow">
+              TRAINING CENTER
+            </span>
+
             <h2>Quick Actions</h2>
           </div>
         </div>
@@ -271,224 +304,63 @@ function StudyMap({
             className="action-card"
             onClick={() => onStart()}
           >
-            <div className="action-icon">⚔️</div>
+            <div className="action-icon">
+              ⚔️
+            </div>
+
             <strong>Study Run</strong>
-            <span>Practice mixed questions</span>
+
+            <span>
+              Practice all available questions
+            </span>
+          </button>
+
+          <button
+            className="action-card"
+            onClick={() => onStart(1)}
+          >
+            <div className="action-icon">
+              📘
+            </div>
+
+            <strong>Chapter 1</strong>
+
+            <span>
+              Financial management fundamentals
+            </span>
           </button>
 
           <button
             className="action-card"
             onClick={() => onStart(2)}
           >
-            <div className="action-icon">🧮</div>
-            <strong>Calculation Run</strong>
-            <span>Practice Chapter 2 calculations</span>
+            <div className="action-icon">
+              🧮
+            </div>
+
+            <strong>Chapter 2</strong>
+
+            <span>
+              Financial statements and cash flow
+            </span>
           </button>
 
           <button
             className="action-card"
             onClick={() => onStart(3)}
           >
-            <div className="action-icon">📊</div>
-            <strong>Ratio Run</strong>
-            <span>Practice Chapter 3 ratios</span>
-          </button>
+            <div className="action-icon">
+              📊
+            </div>
 
-          <button
-            className="action-card"
-            onClick={() => onStart()}
-          >
-            <div className="action-icon">🔥</div>
-            <strong>Exam Warm-Up</strong>
-            <span>Start immediately</span>
+            <strong>Chapter 3</strong>
+
+            <span>
+              Financial statement analysis
+            </span>
           </button>
         </div>
       </section>
-    </main>
-  );
-}
-
-/* =========================================================
-   SKILLS
-========================================================= */
-
-function SkillsScreen({
-  progress,
-  onTrain,
-}: {
-  progress: Progress;
-  onTrain: (chapter: number, section: string) => void;
-}) {
-  return (
-    <main className="main-content">
-      <section className="section-heading">
-        <div>
-          <span className="eyebrow">MASTERY TRACKER</span>
-          <h1>My Skills</h1>
-          <p>
-            Train individual topics and build your mastery from Not Learned
-            to Mastered.
-          </p>
-        </div>
-      </section>
-
-      <div className="mastery-scale">
-        <div>
-          <strong>0</strong>
-          <span>Not Learned</span>
-        </div>
-
-        <div>
-          <strong>1</strong>
-          <span>Familiar</span>
-        </div>
-
-        <div>
-          <strong>2</strong>
-          <span>Developing</span>
-        </div>
-
-        <div>
-          <strong>3</strong>
-          <span>Proficient</span>
-        </div>
-
-        <div>
-          <strong>4</strong>
-          <span>Mastered</span>
-        </div>
-      </div>
-
-      {CHAPTERS.map((chapter) => (
-        <section className="skill-chapter" key={chapter.id}>
-          <div className="skill-chapter-header">
-            <div>
-              <span>CHAPTER {chapter.id}</span>
-              <h2>{chapter.title}</h2>
-            </div>
-          </div>
-
-          {chapter.sections.map((section) => {
-            const skillQuestions = QUESTIONS.filter(
-              (q) =>
-                q.chapter === chapter.id &&
-                q.section === section
-            );
-
-            const skills = Array.from(
-              new Set(skillQuestions.map((q) => q.skill))
-            );
-
-            return (
-              <div className="skill-row" key={section}>
-                <div className="skill-info">
-                  <strong>{section}</strong>
-
-                  <span>
-                    {skillQuestions.length} questions
-                  </span>
-
-                  {skills.length > 0 && (
-                    <small>
-                      Skills: {skills.join(", ")}
-                    </small>
-                  )}
-                </div>
-
-                <div className="skill-bar">
-                  <div
-                    className="skill-bar-fill"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        ((skills.reduce(
-                          (sum, skill) =>
-                            sum + (progress[skill] ?? 0),
-                          0
-                        ) /
-                          Math.max(skills.length, 1)) /
-                          4) *
-                          100
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-                <button
-                  className="train-button"
-                  onClick={() =>
-                    onTrain(chapter.id, section)
-                  }
-                >
-                  TRAIN →
-                </button>
-              </div>
-            );
-          })}
-        </section>
-      ))}
-    </main>
-  );
-}
-
-/* =========================================================
-   FORMULA BOOK
-========================================================= */
-
-function FormulaBook() {
-  const chapterNumbers = Array.from(
-    new Set(FORMULAS.map((formula) => formula.chapter))
-  );
-
-  return (
-    <main className="main-content">
-      <section className="section-heading">
-        <div>
-          <span className="eyebrow">REFERENCE</span>
-          <h1>Formula Book</h1>
-          <p>
-            Your Chapter 2 and Chapter 3 formulas in one place.
-          </p>
-        </div>
-      </section>
-
-      {chapterNumbers.map((chapter) => (
-        <section className="formula-section" key={chapter}>
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                CHAPTER {chapter}
-              </span>
-              <h2>
-                {CHAPTERS.find((c) => c.id === chapter)?.title}
-              </h2>
-            </div>
-          </div>
-
-          <div className="formula-grid">
-            {FORMULAS.filter(
-              (formula) => formula.chapter === chapter
-            ).map((formula) => (
-              <article
-                className="formula-card"
-                key={formula.id}
-              >
-                <div className="formula-card-top">
-                  <span>{formula.name}</span>
-                </div>
-
-                <div className="formula-display">
-                  {formula.formula}
-                </div>
-
-                {formula.description && (
-                  <p>{formula.description}</p>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
     </main>
   );
 }
@@ -500,125 +372,169 @@ function FormulaBook() {
 function StudyRun({
   selectedChapter,
   selectedSection,
+  onStart,
   onExit,
-  onRecordSkill,
+  onCorrect,
 }: {
   selectedChapter: number | null;
   selectedSection: string | null;
+
+  onStart: (
+    chapter?: number | null,
+    section?: string | null
+  ) => void;
+
   onExit: () => void;
-  onRecordSkill: (skill: string, correct: boolean) => void;
+
+  onCorrect: (
+    skill: string,
+    correct: boolean
+  ) => void;
 }) {
   const [chapterChoice, setChapterChoice] = useState<
     number | "all"
   >(selectedChapter ?? "all");
 
-  const [sectionChoice, setSectionChoice] = useState(
-    selectedSection ?? "all"
-  );
+  const [sectionChoice, setSectionChoice] =
+    useState<string>(
+      selectedSection ?? "all"
+    );
 
   const [started, setStarted] = useState(
-    selectedChapter !== null || selectedSection !== null
+    selectedChapter !== null ||
+      selectedSection !== null
   );
 
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<
-    number | null
-  >(null);
+  const [questionNumber, setQuestionNumber] =
+    useState(0);
+
+  const [selectedAnswer, setSelectedAnswer] =
+    useState<number | null>(null);
+
+  const [answered, setAnswered] =
+    useState(false);
+
   const [score, setScore] = useState(0);
-  const [answered, setAnswered] = useState(false);
-  const [finished, setFinished] = useState(false);
+
+  const [finished, setFinished] =
+    useState(false);
 
   const availableSections = useMemo(() => {
-    const chapter =
-      chapterChoice === "all"
-        ? null
-        : chapterChoice;
+    const filtered = QUESTIONS.filter(
+      (question) =>
+        chapterChoice === "all" ||
+        question.chapter === chapterChoice
+    );
 
-    const sections = QUESTIONS.filter(
-      (q) =>
-        chapter === null ||
-        q.chapter === chapter
-    ).map((q) => q.section);
-
-    return Array.from(new Set(sections));
+    return Array.from(
+      new Set(
+        filtered.map(
+          (question) => question.section
+        )
+      )
+    );
   }, [chapterChoice]);
 
   const runQuestions = useMemo(() => {
-    return QUESTIONS.filter((q) => {
-      const chapterMatch =
+    return QUESTIONS.filter((question) => {
+      const chapterMatches =
         chapterChoice === "all" ||
-        q.chapter === chapterChoice;
+        question.chapter === chapterChoice;
 
-      const sectionMatch =
+      const sectionMatches =
         sectionChoice === "all" ||
-        q.section === sectionChoice;
+        question.section === sectionChoice;
 
-      return chapterMatch && sectionMatch;
+      return (
+        chapterMatches && sectionMatches
+      );
     });
   }, [chapterChoice, sectionChoice]);
 
-  const question = runQuestions[questionIndex];
+  const question =
+    runQuestions[questionNumber];
 
-  const startRun = () => {
-    setQuestionIndex(0);
+  const beginRun = () => {
+    setQuestionNumber(0);
     setSelectedAnswer(null);
-    setScore(0);
     setAnswered(false);
+    setScore(0);
     setFinished(false);
     setStarted(true);
   };
 
-  const chooseAnswer = (index: number) => {
+  const answerQuestion = (answer: number) => {
     if (answered || !question) return;
 
-    setSelectedAnswer(index);
+    setSelectedAnswer(answer);
     setAnswered(true);
 
-    const correct = index === question.answer;
+    const correct =
+      answer === question.answer;
 
     if (correct) {
-      setScore((current) => current + 1);
+      setScore(
+        (currentScore) =>
+          currentScore + 1
+      );
     }
 
-    onRecordSkill(question.skill, correct);
+    onCorrect(
+      question.skill,
+      correct
+    );
   };
 
   const nextQuestion = () => {
-    if (questionIndex >= runQuestions.length - 1) {
+    if (
+      questionNumber >=
+      runQuestions.length - 1
+    ) {
       setFinished(true);
       return;
     }
 
-    setQuestionIndex((current) => current + 1);
+    setQuestionNumber(
+      (current) => current + 1
+    );
+
     setSelectedAnswer(null);
     setAnswered(false);
   };
+
+  /* SETUP SCREEN */
 
   if (!started) {
     return (
       <main className="main-content">
         <section className="study-run-start">
-          <span className="eyebrow">TRAINING MODE</span>
+          <span className="eyebrow">
+            TRAINING MODE
+          </span>
 
           <h1>Study Run</h1>
 
           <p>
-            Choose what you want to practice, then start your
-            run.
+            Choose exactly what you want to
+            practice.
           </p>
 
           <div className="study-controls">
             <label>
               Chapter
+
               <select
                 value={chapterChoice}
                 onChange={(event) => {
-                  const value = event.target.value;
+                  const value =
+                    event.target.value;
 
                   if (value === "all") {
                     setChapterChoice("all");
                   } else {
-                    setChapterChoice(Number(value));
+                    setChapterChoice(
+                      Number(value)
+                    );
                   }
 
                   setSectionChoice("all");
@@ -628,34 +544,47 @@ function StudyRun({
                   All Chapters
                 </option>
 
-                {CHAPTERS.map((chapter) => (
-                  <option
-                    value={chapter.id}
-                    key={chapter.id}
-                  >
-                    Chapter {chapter.id}
-                  </option>
-                ))}
+                {CHAPTERS.map(
+                  (chapter) => (
+                    <option
+                      key={chapter.number}
+                      value={
+                        chapter.number
+                      }
+                    >
+                      Chapter{" "}
+                      {chapter.number}
+                    </option>
+                  )
+                )}
               </select>
             </label>
 
             <label>
               Section
+
               <select
                 value={sectionChoice}
                 onChange={(event) =>
-                  setSectionChoice(event.target.value)
+                  setSectionChoice(
+                    event.target.value
+                  )
                 }
               >
                 <option value="all">
                   All Sections
                 </option>
 
-                {availableSections.map((section) => (
-                  <option value={section} key={section}>
-                    {section}
-                  </option>
-                ))}
+                {availableSections.map(
+                  (section) => (
+                    <option
+                      key={section}
+                      value={section}
+                    >
+                      {section}
+                    </option>
+                  )
+                )}
               </select>
             </label>
           </div>
@@ -666,14 +595,16 @@ function StudyRun({
             </strong>
 
             <span>
-              This run will test the selected material.
+              Ready to begin training.
             </span>
           </div>
 
           <button
             className="world-button"
-            onClick={startRun}
-            disabled={runQuestions.length === 0}
+            onClick={beginRun}
+            disabled={
+              runQuestions.length === 0
+            }
           >
             ⚔️ BEGIN RUN
           </button>
@@ -689,12 +620,16 @@ function StudyRun({
     );
   }
 
+  /* FINISHED SCREEN */
+
   if (finished) {
     const percentage =
       runQuestions.length === 0
         ? 0
         : Math.round(
-            (score / runQuestions.length) * 100
+            (score /
+              runQuestions.length) *
+              100
           );
 
     return (
@@ -716,44 +651,49 @@ function StudyRun({
             You completed this training run.
           </p>
 
-          <div className="score-actions">
-            <button
-              className="world-button"
-              onClick={startRun}
-            >
-              🔄 RUN AGAIN
-            </button>
+          <button
+            className="world-button"
+            onClick={beginRun}
+          >
+            🔄 RUN AGAIN
+          </button>
 
-            <button
-              className="secondary-button"
-              onClick={() => {
-                setStarted(false);
-                setFinished(false);
-              }}
-            >
-              CHANGE TRAINING
-            </button>
+          <button
+            className="secondary-button"
+            onClick={() => {
+              setStarted(false);
+              setFinished(false);
+            }}
+          >
+            CHANGE TRAINING
+          </button>
 
-            <button
-              className="secondary-button"
-              onClick={onExit}
-            >
-              ← STUDY MAP
-            </button>
-          </div>
+          <button
+            className="secondary-button"
+            onClick={onExit}
+          >
+            ← STUDY MAP
+          </button>
         </section>
       </main>
     );
   }
 
+  /* QUESTION SCREEN */
+
   if (!question) {
     return (
       <main className="main-content">
         <section className="question-card">
-          <h1>No questions found</h1>
+          <h1>
+            No questions found.
+          </h1>
+
           <button
             className="world-button"
-            onClick={() => setStarted(false)}
+            onClick={() =>
+              setStarted(false)
+            }
           >
             CHANGE TRAINING
           </button>
@@ -762,8 +702,9 @@ function StudyRun({
     );
   }
 
-  const isCorrect =
-    selectedAnswer === question.answer;
+  const correct =
+    selectedAnswer ===
+    question.answer;
 
   return (
     <main className="main-content">
@@ -776,16 +717,18 @@ function StudyRun({
         </button>
 
         <span>
-          Question {questionIndex + 1} of{" "}
+          Question{" "}
+          {questionNumber + 1} of{" "}
           {runQuestions.length}
         </span>
       </div>
 
       <div className="question-progress">
-        <div className="question-progress-fill"
+        <div
+          className="question-progress-fill"
           style={{
             width: `${
-              ((questionIndex + 1) /
+              ((questionNumber + 1) /
                 runQuestions.length) *
               100
             }%`,
@@ -799,10 +742,12 @@ function StudyRun({
             CHAPTER {question.chapter}
           </span>
 
-          <span>{question.type}</span>
+          <span>
+            {question.type}
+          </span>
 
           <span>
-            Score: {score}
+            SCORE: {score}
           </span>
         </div>
 
@@ -811,31 +756,44 @@ function StudyRun({
             {question.skill}
           </div>
 
-          <h1>{question.question}</h1>
+          <h1>
+            {question.question}
+          </h1>
 
           <div className="answer-options">
             {question.options.map(
               (option, index) => {
-                let className = "answer-option";
+                let className =
+                  "answer-option";
 
                 if (answered) {
-                  if (index === question.answer) {
-                    className += " correct";
-                  } else if (
-                    index === selectedAnswer
+                  if (
+                    index ===
+                    question.answer
                   ) {
-                    className += " incorrect";
+                    className +=
+                      " correct";
+                  } else if (
+                    index ===
+                    selectedAnswer
+                  ) {
+                    className +=
+                      " incorrect";
                   }
                 }
 
                 return (
                   <button
                     key={index}
-                    className={className}
-                    onClick={() =>
-                      chooseAnswer(index)
+                    className={
+                      className
                     }
                     disabled={answered}
+                    onClick={() =>
+                      answerQuestion(
+                        index
+                      )
+                    }
                   >
                     <span className="answer-letter">
                       {String.fromCharCode(
@@ -843,7 +801,9 @@ function StudyRun({
                       )}
                     </span>
 
-                    <span>{option}</span>
+                    <span>
+                      {option}
+                    </span>
                   </button>
                 );
               }
@@ -851,24 +811,23 @@ function StudyRun({
           </div>
 
           {answered && (
-            <div
-              className={`explanation ${
-                isCorrect
-                  ? "explanation-correct"
-                  : "explanation-incorrect"
-              }`}
-            >
+            <div className="explanation">
               <strong>
-                {isCorrect
+                {correct
                   ? "✓ Correct!"
                   : "✗ Not quite."}
               </strong>
 
-              <p>{question.explanation}</p>
+              <p>
+                {question.explanation}
+              </p>
 
               {question.formula && (
                 <div className="formula-callout">
-                  <strong>Formula</strong>
+                  <strong>
+                    Formula
+                  </strong>
+
                   <span>
                     {question.formula}
                   </span>
@@ -880,9 +839,11 @@ function StudyRun({
           {answered && (
             <button
               className="next-button"
-              onClick={nextQuestion}
+              onClick={
+                nextQuestion
+              }
             >
-              {questionIndex >=
+              {questionNumber >=
               runQuestions.length - 1
                 ? "FINISH RUN →"
                 : "NEXT QUESTION →"}
@@ -890,6 +851,254 @@ function StudyRun({
           )}
         </article>
       </section>
+    </main>
+  );
+}
+
+/* =========================================================
+   MY SKILLS
+========================================================= */
+
+function SkillsScreen({
+  mastery,
+  onTrain,
+}: {
+  mastery: Record<string, number>;
+
+  onTrain: (
+    chapter?: number | null,
+    section?: string | null
+  ) => void;
+}) {
+  const sectionsByChapter =
+    CHAPTERS.map((chapter) => {
+      const questions =
+        QUESTIONS.filter(
+          (question) =>
+            question.chapter ===
+            chapter.number
+        );
+
+      return {
+        chapter,
+        sections:
+          Array.from(
+            new Set(
+              questions.map(
+                (question) =>
+                  question.section
+              )
+            )
+          ),
+      };
+    });
+
+  return (
+    <main className="main-content">
+      <section className="section-heading">
+        <div>
+          <span className="eyebrow">
+            MASTERY TRACKER
+          </span>
+
+          <h1>My Skills</h1>
+
+          <p>
+            Choose a section and train it
+            directly.
+          </p>
+        </div>
+      </section>
+
+      <div className="mastery-scale">
+        <div>
+          <strong>0</strong>
+          <span>
+            Not Learned
+          </span>
+        </div>
+
+        <div>
+          <strong>1</strong>
+          <span>Familiar</span>
+        </div>
+
+        <div>
+          <strong>2</strong>
+          <span>
+            Developing
+          </span>
+        </div>
+
+        <div>
+          <strong>3</strong>
+          <span>
+            Proficient
+          </span>
+        </div>
+
+        <div>
+          <strong>4</strong>
+          <span>
+            Mastered
+          </span>
+        </div>
+      </div>
+
+      {sectionsByChapter.map(
+        ({ chapter, sections }) => (
+          <section
+            className="skill-chapter"
+            key={chapter.number}
+          >
+            <div className="skill-chapter-header">
+              <div>
+                <span>
+                  CHAPTER{" "}
+                  {chapter.number}
+                </span>
+
+                <h2>
+                  {chapter.title}
+                </h2>
+              </div>
+            </div>
+
+            {sections.map(
+              (section) => {
+                const sectionQuestions =
+                  QUESTIONS.filter(
+                    (question) =>
+                      question.chapter ===
+                        chapter.number &&
+                      question.section ===
+                        section
+                  );
+
+                const skills =
+                  Array.from(
+                    new Set(
+                      sectionQuestions.map(
+                        (question) =>
+                          question.skill
+                      )
+                    )
+                  );
+
+                const average =
+                  skills.length === 0
+                    ? 0
+                    : skills.reduce(
+                        (
+                          total,
+                          skill
+                        ) =>
+                          total +
+                          (mastery[
+                            skill
+                          ] || 0),
+                        0
+                      ) /
+                      skills.length;
+
+                const percentage =
+                  (average / 4) *
+                  100;
+
+                return (
+                  <div
+                    className="skill-row"
+                    key={section}
+                  >
+                    <div className="skill-info">
+                      <strong>
+                        {section}
+                      </strong>
+
+                      <span>
+                        {
+                          sectionQuestions.length
+                        }{" "}
+                        questions
+                      </span>
+                    </div>
+
+                    <div className="skill-bar">
+                      <div
+                        className="skill-bar-fill"
+                        style={{
+                          width: `${percentage}%`,
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      className="train-button"
+                      onClick={() =>
+                        onTrain(
+                          chapter.number,
+                          section
+                        )
+                      }
+                    >
+                      TRAIN →
+                    </button>
+                  </div>
+                );
+              }
+            )}
+          </section>
+        )
+      )}
+    </main>
+  );
+}
+
+/* =========================================================
+   FORMULA BOOK
+========================================================= */
+
+function FormulaBook() {
+  return (
+    <main className="main-content">
+      <section className="section-heading">
+        <div>
+          <span className="eyebrow">
+            REFERENCE
+          </span>
+
+          <h1>Formula Book</h1>
+
+          <p>
+            Keep the formulas available while
+            you study.
+          </p>
+        </div>
+      </section>
+
+      <div className="formula-grid">
+        {FORMULAS.map((formula) => (
+          <article
+            className="formula-card"
+            key={formula.id}
+          >
+            <div className="formula-card-top">
+              <span>
+                CHAPTER{" "}
+                {formula.chapter}
+              </span>
+            </div>
+
+            <h3>
+              {formula.name}
+            </h3>
+
+            <div className="formula-display">
+              {formula.formula}
+            </div>
+          </article>
+        ))}
+      </div>
     </main>
   );
 }
