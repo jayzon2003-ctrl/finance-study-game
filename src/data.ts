@@ -352,6 +352,68 @@ export const QUESTIONS: Question[] = [
       "The act strengthened protections against accounting fraud and financial malpractice following major corporate scandals.",
   },
 
+  // --- FNAN 300 Exam 1 Practice Questions ---
+
+  {
+    id: "c1-e01",
+    chapter: 1,
+    section: "Forms of Business Organization",
+    skill: "Sole Proprietorship",
+    type: "concept",
+    question:
+      "Margie opened a used bookstore and is both the 100 percent owner and the store's manager. Which type of business entity does Margie own if she is personally liable for all the store's debts?",
+    options: [
+      "Sole proprietorship",
+      "Limited partnership",
+      "Corporation",
+      "Joint stock company",
+      "General partnership",
+    ],
+    answer: 0,
+    explanation:
+      "A sole proprietorship means the owner has unlimited personal liability for all business debts. Margie is the sole owner and manager with personal liability, which is the defining characteristic of a sole proprietorship.",
+  },
+
+  {
+    id: "c1-e02",
+    chapter: 1,
+    section: "Agency Problem and Control of the Corporation",
+    skill: "Agency Problem",
+    type: "concept",
+    question:
+      "The potential conflict of interest between a firm's owners and its managers is referred to as which type of conflict?",
+    options: [
+      "Organizational",
+      "Structural",
+      "Formative",
+      "Agency",
+      "Territorial",
+    ],
+    answer: 3,
+    explanation:
+      "The agency problem (or agency conflict) arises because stockholders (principals) and managers (agents) may have conflicting interests. Managers may act in their own self-interest rather than maximizing shareholder value.",
+  },
+
+  {
+    id: "c1-e03",
+    chapter: 1,
+    section: "The Goal of Financial Management",
+    skill: "Goal of Financial Management",
+    type: "concept",
+    question:
+      "The goal of financial management is to increase the:",
+    options: [
+      "future value of the firm's total equity",
+      "book value of equity",
+      "dividends paid per share",
+      "current market value per share",
+      "number of shares outstanding",
+    ],
+    answer: 3,
+    explanation:
+      "The goal of financial management is to maximize the current market value per share of existing stock, which is equivalent to maximizing the market value of existing owners' equity.",
+  },
+
   // ============================================================
   // CHAPTER 2
   // ============================================================
@@ -649,6 +711,71 @@ export const QUESTIONS: Question[] = [
     explanation:
       "The Dole Cola example showed OCF of $275, NCS of $400, and ΔNWC of $40. Therefore CFFA = $275 − $400 − $40 = −$165.",
     formula: "CFFA = OCF − NCS − ΔNWC",
+  },
+
+  // --- FNAN 300 Exam 1 Practice Questions ---
+
+  {
+    id: "c2-e01",
+    chapter: 2,
+    section: "Cash Flow",
+    skill: "Change in NWC",
+    type: "calculation",
+    question:
+      "At the beginning of the year, a firm has current assets of $317 and current liabilities of $221. At the end of the year, the current assets are $471 and the current liabilities are $261. What is the change in net working capital?",
+    options: [
+      "−$164",
+      "$114",
+      "$154",
+      "$194",
+      "$0",
+    ],
+    answer: 1,
+    explanation:
+      "NWC = CA − CL. Beginning NWC = $317 − $221 = $96. Ending NWC = $471 − $261 = $210. Change in NWC = $210 − $96 = $114.",
+    formula: "ΔNWC = (Ending CA − Ending CL) − (Beginning CA − Beginning CL)",
+  },
+
+  {
+    id: "c2-e02",
+    chapter: 2,
+    section: "Cash Flow",
+    skill: "Cash Flow from Assets",
+    type: "calculation",
+    question:
+      "Rousey, Inc. had a cash flow to creditors of $17,055 and a cash flow to stockholders of $7,685 over the past year. The company also had net fixed assets of $49,755 at the beginning of the year and $57,190 at the end of the year. Additionally, the company had a depreciation expense of $12,300 and an operating cash flow of $51,270. What was the change in net working capital during the year?",
+    options: [
+      "$5,363",
+      "$9,370",
+      "$6,070",
+      "$7,435",
+      "$6,795",
+    ],
+    answer: 4,
+    explanation:
+      "CFFA = CF/CR + CF/SH = $17,055 + $7,685 = $24,740. NCS = Ending FA − Beginning FA + Depreciation = $57,190 − $49,755 + $12,300 = $19,735. ΔNWC = OCF − NCS − CFFA = $51,270 − $19,735 − $24,740 = $6,795.",
+    formula: "ΔNWC = OCF − NCS − CFFA",
+  },
+
+  {
+    id: "c2-e03",
+    chapter: 2,
+    section: "Cash Flow",
+    skill: "Cash Flow to Stockholders",
+    type: "calculation",
+    question:
+      "During the past year, a company had cash flow to creditors, operating cash flow, and net capital spending of $28,670, $62,875, and $24,680, respectively. The net working capital at the beginning of the year was $10,873 and it was $12,100 at the end of the year. What was the company's cash flow to stockholders during the year?",
+    options: [
+      "$9,525",
+      "$1,227",
+      "$6,552",
+      "$8,298",
+      "$10,752",
+    ],
+    answer: 3,
+    explanation:
+      "ΔNWC = $12,100 − $10,873 = $1,227. CFFA = OCF − NCS − ΔNWC = $62,875 − $24,680 − $1,227 = $36,968. CF/SH = CFFA − CF/CR = $36,968 − $28,670 = $8,298.",
+    formula: "CF/SH = CFFA − CF/CR",
   },
 
   // ============================================================
@@ -1294,6 +1421,110 @@ export const QUESTIONS: Question[] = [
     answer: 0,
     explanation:
       "Seasonal variations can cause financial statement values to change significantly depending on the measurement date.",
+  },
+
+  // --- FNAN 300 Exam 1 Practice Questions ---
+
+  {
+    id: "c3-e01",
+    chapter: 3,
+    section: "Standardized Financial Statements",
+    skill: "Common-Size Balance Sheet",
+    type: "concept",
+    question:
+      "Common-size financial statements present all balance sheet account values as a percentage of:",
+    options: [
+      "the forecasted budget",
+      "sales",
+      "total equity",
+      "total assets",
+      "last year's account value",
+    ],
+    answer: 3,
+    explanation:
+      "Common-size balance sheets express every account as a percentage of total assets, making it easy to compare the composition of assets and liabilities across time or across firms.",
+  },
+
+  {
+    id: "c3-e02",
+    chapter: 3,
+    section: "Standardized Financial Statements",
+    skill: "Common-Size Statements",
+    type: "concept",
+    question:
+      "A common-size balance sheet helps financial managers determine:",
+    options: [
+      "which customers are paying on a timely basis",
+      "if costs are increasing faster or slower than sales",
+      "if changes are occurring in a firm's mix of assets",
+      "if a firm is generating more or less sales per dollar of assets than in prior years",
+      "the rate at which the firm's dividend payout is changing",
+    ],
+    answer: 2,
+    explanation:
+      "By expressing each balance sheet item as a percentage of total assets, a common-size balance sheet reveals shifts in the firm's asset mix over time, such as changes in the proportion of inventory, receivables, or fixed assets.",
+  },
+
+  {
+    id: "c3-e03",
+    chapter: 3,
+    section: "Using Financial Statement Information",
+    skill: "Financial Statement Analysis",
+    type: "concept",
+    question:
+      "Financial statement analysis:",
+    options: [
+      "is primarily used to identify account values that meet the normal standards",
+      "is limited to internal use by a firm's managers",
+      "provides useful information that can serve as a basis for forecasting future performance",
+      "provides useful information to shareholders but not to debt holders",
+      "is enhanced by comparing results to those of a firm's peers but not by comparing results to prior periods",
+    ],
+    answer: 2,
+    explanation:
+      "Financial statement analysis provides useful information to both internal and external users, including managers, shareholders, and creditors. It serves as a basis for forecasting future performance and is enhanced by both peer group and time-trend comparisons.",
+  },
+
+  {
+    id: "c3-e04",
+    chapter: 3,
+    section: "Financial Leverage Ratios",
+    skill: "Total Debt Ratio",
+    type: "calculation",
+    question:
+      "Tony's Machinery has total equity of $815,280, long-term debt of $391,900, net working capital of $49,500, and total assets of $1,292,485. What is the total debt ratio?",
+    options: [
+      ".50",
+      ".37",
+      ".64",
+      ".46",
+      ".60",
+    ],
+    answer: 1,
+    explanation:
+      "Total Debt Ratio = (Total Assets − Total Equity) / Total Assets = ($1,292,485 − $815,280) / $1,292,485 = $477,205 / $1,292,485 ≈ .37.",
+    formula: "Total Debt Ratio = (TA − TE) / TA",
+  },
+
+  {
+    id: "c3-e05",
+    chapter: 3,
+    section: "Profitability Ratios",
+    skill: "Return on Equity",
+    type: "calculation",
+    question:
+      "Windswept, Inc. had net income of $1,046 million in 2017. Its balance sheet shows common stock of $3,060 million and retained earnings of $930 million. What is the return on equity for 2017?",
+    options: [
+      "32.28%",
+      "34.18%",
+      "56.05%",
+      "26.22%",
+      "42.98%",
+    ],
+    answer: 3,
+    explanation:
+      "ROE = Net Income / Total Equity. Total Equity = Common Stock + Retained Earnings = $3,060 + $930 = $3,990. ROE = $1,046 / $3,990 = 26.22%.",
+    formula: "ROE = NI / TE",
   },
 ];
 
