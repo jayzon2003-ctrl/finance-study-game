@@ -26,12 +26,16 @@ function App() {
 
   const startStudy = (
     chapter: number | null = null,
-    section: string | null = null
+    section: string | null = null,
+    autoStart = true
   ) => {
     setSelectedChapter(chapter);
     setSelectedSection(section);
+    setAutoStartStudy(autoStart);
     setScreen("study");
   };
+
+  const [autoStartStudy, setAutoStartStudy] = useState(true);
 
   const updateMastery = (skill: string, correct: boolean) => {
     if (!correct) return;
@@ -123,19 +127,14 @@ function App() {
 
       {/* SCREENS */}
       {screen === "map" && (
-        <StudyMap
-          onStart={startStudy}
-          onEnterChapter={(chapter) => {
-            setSelectedChapter(chapter);
-            setSelectedSection(null);
-          }}
-        />
+        <StudyMap onStart={startStudy} />
       )}
 
       {screen === "study" && (
         <StudyRun
           selectedChapter={selectedChapter}
           selectedSection={selectedSection}
+          autoStart={autoStartStudy}
           onStart={startStudy}
           onExit={() => setScreen("map")}
           onCorrect={updateMastery}
@@ -160,14 +159,12 @@ function App() {
 
 function StudyMap({
   onStart,
-  onEnterChapter,
 }: {
   onStart: (
     chapter?: number | null,
-    section?: string | null
+    section?: string | null,
+    autoStart?: boolean
   ) => void;
-
-  onEnterChapter: (chapter: number) => void;
 }) {
   const totalQuestions = QUESTIONS.length;
 
@@ -269,19 +266,19 @@ function StudyMap({
               <button
                 className="world-button"
                 onClick={() =>
-                  onEnterChapter(chapter.number)
+                  onStart(chapter.number, null, true)
                 }
               >
-                ENTER WORLD →
+                START CHAPTER →
               </button>
 
               <button
                 className="secondary-button"
                 onClick={() =>
-                  onStart(chapter.number, null)
+                  onStart(chapter.number, null, false)
                 }
               >
-                START CHAPTER
+                CHOOSE SECTION
               </button>
             </article>
           );
@@ -372,16 +369,19 @@ function StudyMap({
 function StudyRun({
   selectedChapter,
   selectedSection,
+  autoStart,
   onStart,
   onExit,
   onCorrect,
 }: {
   selectedChapter: number | null;
   selectedSection: string | null;
+  autoStart: boolean;
 
   onStart: (
     chapter?: number | null,
-    section?: string | null
+    section?: string | null,
+    autoStart?: boolean
   ) => void;
 
   onExit: () => void;
@@ -400,10 +400,7 @@ function StudyRun({
       selectedSection ?? "all"
     );
 
-  const [started, setStarted] = useState(
-    selectedChapter !== null ||
-      selectedSection !== null
-  );
+  const [started, setStarted] = useState(autoStart);
 
   const [questionNumber, setQuestionNumber] =
     useState(0);
@@ -867,7 +864,8 @@ function SkillsScreen({
 
   onTrain: (
     chapter?: number | null,
-    section?: string | null
+    section?: string | null,
+    autoStart?: boolean
   ) => void;
 }) {
   const sectionsByChapter =
@@ -1037,7 +1035,8 @@ function SkillsScreen({
                       onClick={() =>
                         onTrain(
                           chapter.number,
-                          section
+                          section,
+                          true
                         )
                       }
                     >
