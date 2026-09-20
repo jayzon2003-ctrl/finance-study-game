@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { CHAPTERS, FORMULAS, QUESTIONS } from "./data";
+import { canGenerate, generateQuestion } from "./questionGenerator";
 
 type Screen = "map" | "skills" | "formulas" | "study";
 
@@ -453,7 +454,13 @@ function StudyRun({
   const question = useMemo(() => {
     if (!rawQuestion) return null;
 
-    const indexed = rawQuestion.options.map((opt, i) => ({
+    // For calculation/formula questions that have a generator,
+    // produce fresh random numbers with a correctly computed answer.
+    const base = canGenerate(rawQuestion.id)
+      ? { ...rawQuestion, ...generateQuestion(rawQuestion.id)! }
+      : rawQuestion;
+
+    const indexed = base.options.map((opt, i) => ({
       opt,
       originalIndex: i,
     }));
@@ -464,10 +471,10 @@ function StudyRun({
     }
 
     return {
-      ...rawQuestion,
+      ...base,
       options: indexed.map((item) => item.opt),
       answer: indexed.findIndex(
-        (item) => item.originalIndex === rawQuestion.answer
+        (item) => item.originalIndex === base.answer
       ),
     };
   }, [rawQuestion]);
